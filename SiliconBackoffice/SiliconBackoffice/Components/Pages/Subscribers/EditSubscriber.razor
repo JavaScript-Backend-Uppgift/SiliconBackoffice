@@ -1,0 +1,129 @@
+﻿@page "/editsubscriber"
+
+@rendermode InteractiveServer
+
+
+<div>
+    <div class="w-50">
+        @StatusMessage
+    </div>
+    <h4 class="mb-4">Edit subscriber</h4>
+    <EditForm class="form-group" method="post" FormName="subscriberform" Model="SubscriberForm" OnValidSubmit="HandleSubmit" novalidate>
+        <div class="mb-3">
+            <label class="form-check-label">Daily Newsletter</label>
+            <InputCheckbox class="form-check-input" @bind-Value="SubscriberForm.DailyNewsletter" />
+        </div>
+        <div class="mb-3">
+            <label class="form-check-label">Advertising Updates</label>
+            <InputCheckbox class="form-check-input" @bind-Value="SubscriberForm.AdvertisingUpdates" />
+        </div>
+        <div class="mb-3">
+            <label class="form-check-label">Week In Review</label>
+            <InputCheckbox class="form-check-input" @bind-Value="SubscriberForm.WeekInReview" />
+        </div>
+        <div class="mb-3">
+            <label class="form-check-label">Event Updates</label>
+            <InputCheckbox class="form-check-input" @bind-Value="SubscriberForm.EventUpdates" />
+        </div>
+        <div class="mb-3">
+            <label class="form-check-label">Startups Weekly</label>
+            <InputCheckbox class="form-check-input" @bind-Value="SubscriberForm.StartupsWeekly" />
+        </div>
+        <div class="mb-3">
+            <label class="form-check-label">Podcasts</label>
+            <InputCheckbox class="form-check-input" @bind-Value="SubscriberForm.Podcasts" />
+        </div>
+        <button class="btn btn-primary" type="submit">Save changes</button>
+    </EditForm>
+</div>
+
+
+
+@code {
+
+    [SupplyParameterFromQuery]
+    public string? Id { get; set; }
+
+    private Subscriber currentSubscriber = default!;
+
+    [SupplyParameterFromQuery]
+    public string StatusMessage { get; set; } = "";
+
+
+    [SupplyParameterFromForm(FormName ="subscriberform")]
+    private SubscribeModel SubscriberForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id == null)
+        {
+            NavigationManager.NavigateTo("/not-found");
+        }
+
+        await GetSubscriberById(Id!);
+
+
+    }
+
+    private async Task GetSubscriberById(string id)
+    {
+
+        var subscriber = await Http.GetFromJsonAsync<Subscriber>($"https://silicon-newsletterprovider.azurewebsites.net/api/editsubscriber{id}?code=VrtNJz9ANmZnm4R_7USYvjadqkyGhkiYs7VFLjGItOqpAzFuXxkXJw%3D%3D");
+        if (subscriber != null)
+        {
+            currentSubscriber = subscriber;
+        }
+
+        SubscriberForm.DailyNewsletter = subscriber.DailyNewsletter;
+        SubscriberForm.AdvertisingUpdates = subscriber.AdvertisingUpdates;
+        SubscriberForm.WeekInReview = subscriber.WeekInReview;
+        SubscriberForm.EventUpdates = subscriber.EventUpdates;
+        SubscriberForm.StartupsWeekly = subscriber.StartupsWeekly;
+        SubscriberForm.Podcasts = subscriber.Podcasts;
+
+    }
+
+    private async Task HandleSubmit()
+    {
+        currentSubscriber.DailyNewsletter = SubscriberForm.DailyNewsletter;
+        currentSubscriber.AdvertisingUpdates = SubscriberForm.AdvertisingUpdates;
+        currentSubscriber.WeekInReview = SubscriberForm.WeekInReview;
+        currentSubscriber.EventUpdates = SubscriberForm.EventUpdates;
+        currentSubscriber.StartupsWeekly = SubscriberForm.StartupsWeekly;
+        currentSubscriber.Podcasts = SubscriberForm.Podcasts;
+
+        var updateResult = await Http.PutAsJsonAsync($"https://silicon-newsletterprovider.azurewebsites.net/api/subscriber/{currentSubscriber.Email}?code=2PtV6Z3YJKaU05qP4rAHWh0svEGuRj61UWizB5pNHT1AAzFuXpkEAw%3D%3D", currentSubscriber);
+        if (updateResult.IsSuccessStatusCode)
+        {
+            StatusMessage = "Subscriber was updated";
+        }
+        else
+        {
+            StatusMessage = "Subscriber was not updated";
+        }
+    }
+
+
+    private sealed class SubscribeModel
+    {
+        public bool DailyNewsletter { get; set; } = false;
+        public bool AdvertisingUpdates { get; set; } = false;
+        public bool WeekInReview { get; set; } = false;
+        public bool EventUpdates { get; set; } = false;
+        public bool StartupsWeekly { get; set; } = false;
+        public bool Podcasts { get; set; } = false;
+    }
+
+    private sealed class Subscriber
+    {
+        public string Id { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public bool DailyNewsletter { get; set; }
+        public bool AdvertisingUpdates { get; set; }
+        public bool WeekInReview { get; set; }
+        public bool EventUpdates { get; set; }
+        public bool StartupsWeekly { get; set; }
+        public bool Podcasts { get; set; }
+    }
+
+}

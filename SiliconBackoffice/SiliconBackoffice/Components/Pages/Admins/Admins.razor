@@ -1,0 +1,119 @@
+﻿@page "/admins"
+<h3>Admins</h3>
+@* @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+
+@inject RoleManager<IdentityRole> RoleManager
+@inject UserManager<ApplicationUser> UserManager
+
+@attribute [StreamRendering]
+
+
+<div class="container">
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <div class="alert alert-danger error-message">
+            @StatusMessage
+        </div>
+    }
+
+    <div class="users">
+        <h1>Admins</h1>
+        @if (users != null)
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>User ID</th>
+                        <th>Roles</th>
+                        <th>Option</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>@user.Email</td>
+                            <td>@user.Id</td>
+                            <td>@string.Join(", ", user.Roles)</td>
+                            <td>
+                                <a href="/edituser?id=@user.Id">Edit</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>Loading...</p>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Admin> admins;
+
+    [SupplyParameterFromQuery]
+    public string StatusMessage { get; set; } = "";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var userList = await UserManager.Users.ToListAsync();
+            admins = new List<Admin>();
+
+            foreach (var user in userList)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                admins.Add(new Admin
+                    {
+                        Id = user.Id,
+                        Email = user.Email,
+                        Roles = roles.ToList()
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading users: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteUserAsync(ApplicationUser user)
+    {
+
+        try
+        {
+            var response = await Http.DeleteAsync($"https://silicon-userprovider.azurewebsites.net/api/DeleteUser?code=VBZsZazEJM9Bl6Z1jcKvZIwXOv1xEWQ1o9Aix8EZd5egAzFuzdqFtQ%3D%3D");
+            if (response.IsSuccessStatusCode)
+            {
+                StatusMessage = $"User {user.Email} deleted successfully!";
+                StateHasChanged();
+            }
+            else
+            {
+                StatusMessage = $"Error deleting user {user.Email}: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error deleting user {user.Email}: {ex.Message}";
+        }
+
+    }
+
+    private sealed class Admin
+    {
+        public string Id { get; set; }
+        public string Email { get; set; }
+        public List<string> Roles { get; set; } = new List<string>();
+    }
+
+} *@
+
